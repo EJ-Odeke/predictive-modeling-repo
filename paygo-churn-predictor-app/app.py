@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(
     page_title="PAYGo Solar Churn Dashboard",
-    page_icon="*",
+    page_icon="☀️",
     layout="wide"
 )
 
@@ -160,44 +160,130 @@ if page == "Overview Dashboard":
     )
 
 
-
-
-
 # ==========================================================
 # PAGE 2: CUSTOMER RISK EXPLORER
 # ==========================================================
 
 elif page == "Customer Risk Explorer":
 
-    st.header(
-        "Customer Risk Explorer"
+
+
+    # ---------------------------------------------
+    # Select Risk Segment
+    # ---------------------------------------------
+
+    selected_risk = st.selectbox(
+        "Select Risk Segment",
+        [
+            "All",
+            "High Risk",
+            "Medium Risk",
+            "Low Risk"
+        ]
     )
+
+    # Filter the dataframe
+
+    if selected_risk == "All":
+        filtered_df = dashboard_df.copy()
+    else:
+        filtered_df = dashboard_df[
+            dashboard_df["risk_category"] == selected_risk
+        ]
+
+    # ---------------------------------------------
+    # Segment Summary Metrics
+    # ---------------------------------------------
+
+    st.subheader("Risk Segment Summary")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            "Customers",
+            f"{len(filtered_df):,}"
+        )
+
+    with col2:
+        st.metric(
+            "Average Churn Probability",
+            f"{filtered_df['churn_probability'].mean():.2%}"
+        )
+
+    with col3:
+        st.metric(
+            "Average Repayment Rate",
+            f"{filtered_df['repayment_rate'].mean():.1f}%"
+        )
+
+    st.divider()
+
+    # ---------------------------------------------
+    # Top Risk Customers
+    # ---------------------------------------------
+
+    st.subheader("Top Customers in Selected Segment")
+
+    top_customers = (
+        filtered_df
+        .sort_values(
+            "churn_probability",
+            ascending=False
+        )
+        .head(10)
+    )
+
+    top_columns = [
+        "customer_id",
+        "risk_category",
+        "churn_probability",
+        "repayment_rate",
+        "missed_payments"
+    ]
+
+    available_top_columns = [
+        col for col in top_columns
+        if col in filtered_df.columns
+    ]
+
+    st.dataframe(
+        top_customers[available_top_columns],
+        use_container_width=True
+    )
+
+    st.divider()
+
+    # ---------------------------------------------
+    # Customer Selection
+    # ---------------------------------------------
+
+    st.subheader("Select Customer")
 
     selected_customer = st.selectbox(
-        "Select Customer ID",
-        dashboard_df["customer_id"]
+        "Customer ID",
+        filtered_df["customer_id"]
     )
 
-    customer = dashboard_df[
-        dashboard_df["customer_id"]
-        == selected_customer
-        ].iloc[0]
+    customer = filtered_df[
+        filtered_df["customer_id"] == selected_customer
+    ].iloc[0]
 
-    st.subheader(
-        "Prediction Output"
-    )
+    # ---------------------------------------------
+    # Prediction Output
+    # ---------------------------------------------
+
+    st.subheader("Prediction Output")
 
     col1, col2 = st.columns(2)
 
     with col1:
-
         st.metric(
             "Churn Probability",
             f"{customer['churn_probability']:.2%}"
         )
 
     with col2:
-
         st.metric(
             "Risk Category",
             customer["risk_category"]
@@ -205,11 +291,64 @@ elif page == "Customer Risk Explorer":
 
     st.divider()
 
-    st.subheader(
-        "Customer Profile"
-    )
+    # ---------------------------------------------
+    # Suggested Retention Action
+    # ---------------------------------------------
+
+    st.subheader("Suggested Retention Action")
+
+    if customer["risk_category"] == "High Risk":
+
+        st.error(
+            """
+            Immediate intervention recommended.
+
+            • Prioritize customer follow-up.
+
+            • Review repayment behaviour and missed payments.
+
+            • Engage customer support if payment issues exist.
+
+            • Consider targeted retention campaigns.
+            """
+        )
+
+    elif customer["risk_category"] == "Medium Risk":
+
+        st.warning(
+            """
+            Moderate intervention recommended.
+
+            • Monitor payment behaviour.
+
+            • Schedule follow-up engagement.
+
+            • Encourage continued product usage.
+            """
+        )
+
+    else:
+
+        st.success(
+            """
+            Customer is currently low risk.
+
+            • Maintain regular engagement.
+
+            • Continue monitoring customer behaviour.
+            """
+        )
+
+    st.divider()
+
+    # ---------------------------------------------
+    # Customer Profile
+    # ---------------------------------------------
+
+    st.subheader("Customer Profile")
 
     profile_columns = [
+
         "tenure",
         "age",
         "gender",
@@ -217,16 +356,30 @@ elif page == "Customer Risk Explorer":
         "missed_payments",
         "outstanding_balance",
         "total_amount_paid",
-        "total_calls"
+        "payment_3m",
+        "avg_payment_3m",
+        "payment_trend_3m",
+        "last_paid_amount",
+        "last_paid_month",
+        "total_calls",
+        "outbound_calls",
+        "received_calls",
+        "unanswered_calls",
+        "repossession_tickets",
+        "complaint_tickets"
+
     ]
 
     available_columns = [
+
         col for col in profile_columns
         if col in dashboard_df.columns
+
     ]
 
     st.dataframe(
-        customer[available_columns]
+        customer[available_columns],
+        use_container_width=True
     )
 
 
