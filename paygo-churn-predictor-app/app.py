@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(
     page_title="PAYGo Solar Churn Dashboard",
-    page_icon="☀️",
+    page_icon="*",
     layout="wide"
 )
 
